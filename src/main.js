@@ -13,9 +13,30 @@ const term = new Terminal({
 
 term.open(document.getElementById('terminal'));
 
-let currentLine = '';
-let prompt = '$';
-let inputEnabled = false;
+let currentLine = ''
+let prompt = '$'
+let inputEnabled = false
+let pendingUrl = null
+let commandHistory = JSON.parse(localStorage.getItem('commandHistory') || '[]')
+let historyIndex = -1
+
+const commandTrie = new Trie()
+const keyTrie = new Trie()
+
+const commandNames = ['boot-loader', 'help', 'list', 'play', 'ls', 'cat', 'github']
+for (const cmd of commandNames) {
+  commandTrie.insert(cmd)
+}
+
+const reloadKeyTrie = () => {
+  keyTrie.clear()
+  const keys = Object.keys(localStorage)
+  for (const key of keys) {
+    keyTrie.insert(key)
+  }
+}
+
+reloadKeyTrie()
 
 // Boot loader
 setTimeout(() => {
@@ -49,31 +70,104 @@ async function bootLoader() {
 }
 
 term.onData(e => {
-    if (!inputEnabled) return;
+    if (!inputEnabled) return
 
     switch (e) {
         case '\r': // Enter
-            term.write('\r\n');
-            if (currentLine.trim()) {
-                handleCommand(currentLine.trim());
+            term.write('\r\n')
+            if (pendingUrl) {
+                const response = currentLine.trim().toLowerCase()
+                if (response === 'y' || response === 'yes') {
+                    window.open(pendingUrl, '_blank')
+                    term.write('Opening...\r\n')
+                } else {
+                    term.write('Cancelled\r\n')
+                }
+                pendingUrl = null
+                currentLine = ''
+                term.write('\r\n')
+                term.write(prompt + ' ')
+            } else {
+                if (currentLine.trim()) {
+                    commandHistory.unshift(currentLine.trim())
+                    if (commandHistory.length > 10) {
+                        commandHistory.pop()
+                    }
+                    localStorage.setItem('commandHistory', JSON.stringify(commandHistory))
+                    reloadKeyTrie()
+                    handleCommand(currentLine.trim())
+                }
+                currentLine = ''
+                historyIndex = -1
+                term.write('\r\n')
+                term.write(prompt + ' ')
             }
-            currentLine = '';
-            term.write('\r\n');
-            term.write(prompt + ' ');
-            break;
+            break
         case '\u007F': // Backspace
             if (currentLine.length > 0) {
-                currentLine = currentLine.slice(0, -1);
-                term.write('\b \b');
+                currentLine = currentLine.slice(0, -1)
+                term.write('\b \b')
             }
-            break;
+            break
+        case '\t': // Tab
+            if (!pendingUrl && currentLine.length > 0) {
+                const parts = currentLine.split(' ')
+                let matches = []
+                let searchText = ''
+
+                if (parts.length === 1) {
+                    searchText = parts[0]
+                    matches = commandTrie.search(searchText)
+                } else if (parts.length === 2 && parts[0] === 'cat') {
+                    searchText = parts[1]
+                    matches = keyTrie.search(searchText)
+                }
+
+                if (matches.length === 1) {
+                    term.write('\r' + prompt + ' ' + ' '.repeat(currentLine.length) + '\r' + prompt + ' ')
+                    if (parts.length === 1) {
+                        currentLine = matches[0]
+                    } else {
+                        currentLine = parts[0] + ' ' + matches[0]
+                    }
+                    term.write(currentLine)
+                } else if (matches.length > 1) {
+                    term.write('\r\n')
+                    for (const match of matches) {
+                        term.write(`${match}  `)
+                    }
+                    term.write('\r\n')
+                    term.write(prompt + ' ' + currentLine)
+                }
+            }
+            break
+        case '\x1b[A': // Up arrow
+            if (commandHistory.length > 0 && historyIndex < commandHistory.length - 1) {
+                historyIndex++
+                term.write('\r' + prompt + ' ' + ' '.repeat(currentLine.length) + '\r' + prompt + ' ')
+                currentLine = commandHistory[historyIndex]
+                term.write(currentLine)
+            }
+            break
+        case '\x1b[B': // Down arrow
+            if (historyIndex > 0) {
+                historyIndex--
+                term.write('\r' + prompt + ' ' + ' '.repeat(currentLine.length) + '\r' + prompt + ' ')
+                currentLine = commandHistory[historyIndex]
+                term.write(currentLine)
+            } else if (historyIndex === 0) {
+                historyIndex = -1
+                term.write('\r' + prompt + ' ' + ' '.repeat(currentLine.length) + '\r' + prompt + ' ')
+                currentLine = ''
+            }
+            break
         default:
             if (e >= String.fromCharCode(0x20) && e <= String.fromCharCode(0x7E)) {
-                currentLine += e;
-                term.write(e);
+                currentLine += e
+                term.write(e)
             }
     }
-});
+})
 
 function handleCommand(cmd) {
     const parts = cmd.split(' ')
@@ -86,7 +180,8 @@ function handleCommand(cmd) {
         'list': cmdList,
         'play': cmdPlay,
         'ls': cmdLs,
-        'cat': cmdCat
+        'cat': cmdCat,
+        'github': cmdGithub
     }
 
     if (commands[command]) {
@@ -113,6 +208,7 @@ function cmdList() {
     term.write('  play       - Play the arcade game Starkeeper One\r\n')
     term.write('  ls         - List all keys in localStorage\r\n')
     term.write('  cat <key>  - Display value of localStorage key\r\n')
+    term.write('  github     - Open GitHub profile\r\n')
 }
 
 const cmdLs = () => {
@@ -121,7 +217,10 @@ const cmdLs = () => {
         term.write('localStorage is empty\r\n')
     } else {
         for (const key of keys) {
-            term.write(`${key}\r\n`)
+            const value = localStorage.getItem(key)
+            const length = value ? value.length : 0
+            const paddedKey = key.padEnd(20, ' ')
+            term.write(`${paddedKey} ${length}\r\n`)
         }
     }
 }
@@ -143,9 +242,17 @@ const cmdCat = (args) => {
     }
 }
 
+const openUrl = (url) => {
+    pendingUrl = url
+    term.write('...opening new window (y)? ')
+}
+
 function cmdPlay() {
-    term.write('Launching Starkeeper One...\r\n');
-    window.open('https://brighams.github.io/StarCastle/', '_blank');
+    openUrl('https://brighams.github.io/StarCastle/')
+}
+
+const cmdGithub = () => {
+    openUrl('https://github.com/brighams')
 }
 
 // Scrolling text manager
