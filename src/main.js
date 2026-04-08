@@ -23,7 +23,7 @@ let historyIndex = -1
 const commandTrie = new Trie()
 const keyTrie = new Trie()
 
-const commandNames = ['boot-loader', 'help', 'list', 'play', 'ls', 'cat', 'github']
+const commandNames = ['boot-loader', 'help', 'list', 'play', 'ls', 'cat', 'github', 'clear']
 for (const cmd of commandNames) {
   commandTrie.insert(cmd)
 }
@@ -44,29 +44,45 @@ setTimeout(() => {
 }, 1000);
 
 async function bootLoader() {
-    term.write('starkOS loading');
+    term.write('starkOS loading')
 
-    let dotCount = 0;
+    const cols = term.cols
+    const rows = term.rows
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?'
+
+    let dotCount = 0
     const dotInterval = setInterval(() => {
         if (dotCount < 3) {
-            term.write('.');
-            dotCount++;
+            term.write('.')
+            dotCount++
         } else {
-            term.write('\b\b\b   \b\b\b');
-            dotCount = 0;
+            term.write('\b\b\b   \b\b\b')
+            dotCount = 0
         }
-    }, 500);
+    }, 500)
+
+    const matrixInterval = setInterval(() => {
+        for (let row = 3; row < rows - 2; row++) {
+            for (let col = 2; col < cols - 2; col++) {
+                const randomChar = chars[Math.floor(Math.random() * chars.length)]
+                const randomColor = neonColors[Math.floor(Math.random() * neonColors.length)]
+                term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;${parseInt(randomColor.slice(1, 3), 16)};${parseInt(randomColor.slice(3, 5), 16)};${parseInt(randomColor.slice(5, 7), 16)}m${randomChar}`)
+            }
+        }
+        term.write('\x1b[1;1H')
+    }, 100)
 
     setTimeout(() => {
-        clearInterval(dotInterval);
-        const now = new Date();
-        const dateTime = now.toLocaleString();
-        term.write('\r\n');
-        term.write(`Welcome to starkOS ${dateTime}\r\n`);
-        term.write('\r\n');
-        term.write(prompt + ' ');
-        inputEnabled = true;
-    }, 5000);
+        clearInterval(dotInterval)
+        clearInterval(matrixInterval)
+        term.reset()
+        const now = new Date()
+        const dateTime = now.toLocaleString()
+        term.write(`Welcome to starkOS ${dateTime}\r\n`)
+        term.write('\r\n')
+        term.write(prompt + ' ')
+        inputEnabled = true
+    }, 5000)
 }
 
 term.onData(e => {
@@ -181,7 +197,8 @@ function handleCommand(cmd) {
         'play': cmdPlay,
         'ls': cmdLs,
         'cat': cmdCat,
-        'github': cmdGithub
+        'github': cmdGithub,
+        'clear': cmdClear
     }
 
     if (commands[command]) {
@@ -209,6 +226,12 @@ function cmdList() {
     term.write('  ls         - List all keys in localStorage\r\n')
     term.write('  cat <key>  - Display value of localStorage key\r\n')
     term.write('  github     - Open GitHub profile\r\n')
+    term.write('  clear      - Clear the terminal\r\n')
+}
+
+const cmdClear = () => {
+    term.reset()
+    term.write(prompt + ' ')
 }
 
 const cmdLs = () => {
