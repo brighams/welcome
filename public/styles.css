@@ -79,7 +79,7 @@ body {
     grid-area: main;
     background: rgba(0.5, 0.5, 0.5, 0.3);
     border-radius: 0.5em;
-    padding: 1em;
+    padding: 0.25em;
     font-family: var(--font-comfortaa);
     display: flex;
     justify-content: center;
