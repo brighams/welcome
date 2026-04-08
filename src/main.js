@@ -19,11 +19,14 @@ let inputEnabled = false
 let pendingUrl = null
 let commandHistory = JSON.parse(localStorage.getItem('commandHistory') || '[]')
 let historyIndex = -1
+let debugMode = false
+let matrixIntervalId = null
+let isPaused = false
 
 const commandTrie = new Trie()
 const keyTrie = new Trie()
 
-const commandNames = ['boot-loader', 'help', 'list', 'play', 'ls', 'cat', 'github', 'clear']
+const commandNames = ['boot-loader', 'help', 'list', 'play', 'ls', 'cat', 'github', 'clear', 'reboot']
 for (const cmd of commandNames) {
   commandTrie.insert(cmd)
 }
@@ -44,7 +47,7 @@ setTimeout(() => {
 }, 1000);
 
 async function bootLoader() {
-    term.write('starkOS loading')
+    term.write('............starkOS loading.....')
 
     const cols = term.cols
     const rows = term.rows
@@ -61,24 +64,83 @@ async function bootLoader() {
         }
     }, 500)
 
-    const matrixInterval = setInterval(() => {
-        for (let row = 3; row < rows - 2; row++) {
-            for (let col = 2; col < cols - 2; col++) {
-                const randomChar = chars[Math.floor(Math.random() * chars.length)]
-                const randomColor = neonColors[Math.floor(Math.random() * neonColors.length)]
-                term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;${parseInt(randomColor.slice(1, 3), 16)};${parseInt(randomColor.slice(3, 5), 16)};${parseInt(randomColor.slice(5, 7), 16)}m${randomChar}`)
+    let frameCount = 0
+    const message = 'HIRE ME'
+    const letterSpacing = 1
+    const messageWidth = (message.length * 8) + ((message.length - 1) * letterSpacing)
+    const messageHeight = 8
+    const startRow = Math.floor((rows - messageHeight) / 2)
+    const startCol = Math.floor((cols - messageWidth) / 2)
+
+    const drawFrame = () => {
+        const showMessage = frameCount % 4 === 0
+
+        if (showMessage) {
+            for (let row = 3; row < rows - 2; row++) {
+                for (let col = 2; col < cols - 2; col++) {
+                    const randomChar = chars[Math.floor(Math.random() * chars.length)]
+                    term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;100;100;100m${randomChar}`)
+                }
+            }
+
+            for (let i = 0; i < message.length; i++) {
+                const letter = message[i]
+                const letterData = pixelFont[letter]
+                if (letterData) {
+                    for (let y = 0; y < 8; y++) {
+                        for (let x = 0; x < 8; x++) {
+                            if (letterData[y][x] === 1) {
+                                const row = startRow + y
+                                const col = startCol + (i * (8 + letterSpacing)) + x
+                                if (row >= 3 && row < rows - 2 && col >= 2 && col < cols - 2) {
+                                    const randomChar = chars[Math.floor(Math.random() * chars.length)]
+                                    term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;0;0;0m${randomChar}`)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            for (let row = 3; row < rows - 2; row++) {
+                for (let col = 2; col < cols - 2; col++) {
+                    const randomChar = chars[Math.floor(Math.random() * chars.length)]
+                    const randomColor = neonColors[Math.floor(Math.random() * neonColors.length)]
+                    term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;${parseInt(randomColor.slice(1, 3), 16)};${parseInt(randomColor.slice(3, 5), 16)};${parseInt(randomColor.slice(5, 7), 16)}m${randomChar}`)
+                }
             }
         }
+
+        term.write(`\x1b[1;50HFrame: ${frameCount}`)
         term.write('\x1b[1;1H')
+    }
+
+    debugMode = true
+    isPaused = false
+    window.advanceFrame = () => {
+        frameCount++
+        drawFrame()
+    }
+
+    matrixIntervalId = setInterval(() => {
+        frameCount++
+        drawFrame()
     }, 100)
 
     setTimeout(() => {
         clearInterval(dotInterval)
-        clearInterval(matrixInterval)
+        if (matrixIntervalId) {
+            clearInterval(matrixIntervalId)
+        }
+        debugMode = false
+        isPaused = false
+        window.advanceFrame = null
         term.reset()
         const now = new Date()
         const dateTime = now.toLocaleString()
         term.write(`Welcome to starkOS ${dateTime}\r\n`)
+        term.write('\r\n')
+        cmdHelp()
         term.write('\r\n')
         term.write(prompt + ' ')
         inputEnabled = true
@@ -86,6 +148,33 @@ async function bootLoader() {
 }
 
 term.onData(e => {
+    if (debugMode) {
+        if (e === ' ') {
+            if (!isPaused) {
+                if (matrixIntervalId) {
+                    clearInterval(matrixIntervalId)
+                    matrixIntervalId = null
+                }
+                isPaused = true
+            } else {
+                if (window.advanceFrame) {
+                    window.advanceFrame()
+                }
+            }
+            return
+        } else if (e === '\r') {
+            if (isPaused) {
+                matrixIntervalId = setInterval(() => {
+                    if (window.advanceFrame) {
+                        window.advanceFrame()
+                    }
+                }, 100)
+                isPaused = false
+            }
+            return
+        }
+    }
+
     if (!inputEnabled) return
 
     switch (e) {
@@ -198,7 +287,8 @@ function handleCommand(cmd) {
         'ls': cmdLs,
         'cat': cmdCat,
         'github': cmdGithub,
-        'clear': cmdClear
+        'clear': cmdClear,
+        'reboot': cmdReboot
     }
 
     if (commands[command]) {
@@ -215,7 +305,7 @@ function cmdHelp() {
     term.write('32K ROM\r\n');
     term.write('SUPERVISOR: OFF\r\n');
     term.write('\r\n');
-    term.write('Type list to see a list of commands\r\n');
+    term.write('Type `list` to see available commands\r\n');
 }
 
 function cmdList() {
@@ -227,11 +317,18 @@ function cmdList() {
     term.write('  cat <key>  - Display value of localStorage key\r\n')
     term.write('  github     - Open GitHub profile\r\n')
     term.write('  clear      - Clear the terminal\r\n')
+    term.write('  reboot     - Reboot the system\r\n')
 }
 
 const cmdClear = () => {
     term.reset()
     term.write(prompt + ' ')
+}
+
+const cmdReboot = () => {
+    inputEnabled = false
+    term.reset()
+    bootLoader()
 }
 
 const cmdLs = () => {
