@@ -1,0 +1,10 @@
+/* Font family definitions */
+:root {
+    --font-audiowide: 'Audiowide', sans-serif;
+    --font-gajraj: 'Gajraj One', serif;
+    --font-comfortaa: 'Comfortaa', sans-serif;
+    --font-monoton: 'Monoton', cursive;
+    --font-roboto-mono: 'Roboto Mono', monospace;
+    --font-roboto-slab: 'Roboto Slab', serif;
+    --font-emoji: 'Noto Color Emoji', sans-serif;
+}
