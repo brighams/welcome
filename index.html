@@ -26,7 +26,6 @@
             <div id="terminal"></div>
         </main>
 
-
         <footer class="footer">
             <span class="scrolling-container" data-message="seeking challenging position building with AI Agents" data-color="#00ff00" data-max-chars="20" data-speed="200"></span>
             <span class="scrolling-container" data-message="retro computing enthusiast       " data-color="#ffff00" data-max-chars="20" data-speed="200"></span>
@@ -70,24 +69,5 @@
     <script src="src/trie.js"></script>
     <script src="src/main.js"></script>
 </body>
-<script>
-
-  window.addEventListener('load', () => {
-    const audio = new Audio('./public/sound/orbit-d0d-main-version-29627-02-39.mp3')
-    audio.loop = true
-    audio.volume = 0.5
-
-    const startAudio = () => {
-      audio.play().catch(() => {
-      })
-      document.removeEventListener('click', startAudio)
-      document.removeEventListener('keydown', startAudio)
-    }
-
-    document.addEventListener('click', startAudio)
-    document.addEventListener('keydown', startAudio)
-  })
-
-</script>
 
 </html>

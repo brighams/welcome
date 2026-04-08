@@ -28,11 +28,13 @@ let animationDuration = 5000
 let remainingTime = 5000
 let animationComplete = false
 let endAnimationCallback = null
+let audio = null
+let musicPlaying = false
 
 const commandTrie = new Trie()
 const keyTrie = new Trie()
 
-const commandNames = ['boot-loader', 'help', 'list', 'play', 'ls', 'cat', 'github', 'clear', 'reboot']
+const commandNames = ['boot-loader', 'help', 'list', 'play', 'ls', 'cat', 'github', 'clear', 'reboot', 'music']
 for (const cmd of commandNames) {
   commandTrie.insert(cmd)
 }
@@ -327,7 +329,8 @@ function handleCommand(cmd) {
         'cat': cmdCat,
         'github': cmdGithub,
         'clear': cmdClear,
-        'reboot': cmdReboot
+        'reboot': cmdReboot,
+        'music': cmdMusic
     }
 
     if (commands[command]) {
@@ -357,6 +360,7 @@ function cmdList() {
     term.write('  github     - Open GitHub profile\r\n')
     term.write('  clear      - Clear the terminal\r\n')
     term.write('  reboot     - Reboot the system\r\n')
+    term.write('  music      - Play relaxing background music\r\n')
 }
 
 const cmdClear = () => {
@@ -402,6 +406,10 @@ const cmdCat = (args) => {
 }
 
 const openUrl = (url) => {
+    if (musicPlaying && audio) {
+        audio.pause()
+        musicPlaying = false
+    }
     pendingUrl = url
     term.write('...opening new window (y)? ')
 }
@@ -412,6 +420,26 @@ function cmdPlay() {
 
 const cmdGithub = () => {
     openUrl('https://github.com/brighams')
+}
+
+const cmdMusic = () => {
+    if (!audio) {
+        audio = new Audio('./public/sound/orbit-d0d-main-version-29627-02-39.mp3')
+        audio.loop = true
+        audio.volume = 0.5
+    }
+
+    if (musicPlaying) {
+        audio.pause()
+        musicPlaying = false
+        term.write('Music stopped\r\n')
+    } else {
+        audio.play().catch(() => {
+            term.write('Failed to play music\r\n')
+        })
+        musicPlaying = true
+        term.write('Music playing\r\n')
+    }
 }
 
 // Scrolling text manager
