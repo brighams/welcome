@@ -22,6 +22,12 @@ let historyIndex = -1
 let debugMode = false
 let matrixIntervalId = null
 let isPaused = false
+let animationTimeoutId = null
+let animationStartTime = null
+let animationDuration = 5000
+let remainingTime = 5000
+let animationComplete = false
+let endAnimationCallback = null
 
 const commandTrie = new Trie()
 const keyTrie = new Trie()
@@ -47,7 +53,7 @@ setTimeout(() => {
 }, 1000);
 
 async function bootLoader() {
-    term.write('............starkOS loading.....')
+    term.write('...starkOS loading')
 
     const cols = term.cols
     const rows = term.rows
@@ -73,40 +79,29 @@ async function bootLoader() {
     const startCol = Math.floor((cols - messageWidth) / 2)
 
     const drawFrame = () => {
-        const showMessage = frameCount % 4 === 0
-
-        if (showMessage) {
-            for (let row = 3; row < rows - 2; row++) {
-                for (let col = 2; col < cols - 2; col++) {
-                    const randomChar = chars[Math.floor(Math.random() * chars.length)]
-                    term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;100;100;100m${randomChar}`)
-                }
+        for (let row = 3; row < rows - 2; row++) {
+            for (let col = 2; col < cols - 2; col++) {
+                const randomChar = chars[Math.floor(Math.random() * chars.length)]
+                const randomColor = neonDimColors[Math.floor(Math.random() * neonDimColors.length)]
+                term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;${parseInt(randomColor.slice(1, 3), 16)};${parseInt(randomColor.slice(3, 5), 16)};${parseInt(randomColor.slice(5, 7), 16)}m${randomChar}`)
             }
+        }
 
-            for (let i = 0; i < message.length; i++) {
-                const letter = message[i]
-                const letterData = pixelFont[letter]
-                if (letterData) {
-                    for (let y = 0; y < 8; y++) {
-                        for (let x = 0; x < 8; x++) {
-                            if (letterData[y][x] === 1) {
-                                const row = startRow + y
-                                const col = startCol + (i * (8 + letterSpacing)) + x
-                                if (row >= 3 && row < rows - 2 && col >= 2 && col < cols - 2) {
-                                    const randomChar = chars[Math.floor(Math.random() * chars.length)]
-                                    term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;0;0;0m${randomChar}`)
-                                }
+        for (let i = 0; i < message.length; i++) {
+            const letter = message[i]
+            const letterData = pixelFont[letter]
+            if (letterData) {
+                for (let y = 0; y < 8; y++) {
+                    for (let x = 0; x < 8; x++) {
+                        if (letterData[y][x] === 1) {
+                            const row = startRow + y
+                            const col = startCol + (i * (8 + letterSpacing)) + x
+                            if (row >= 3 && row < rows - 2 && col >= 2 && col < cols - 2) {
+                                const randomChar = chars[Math.floor(Math.random() * chars.length)]
+                                term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;0;0;0m${randomChar}`)
                             }
                         }
                     }
-                }
-            }
-        } else {
-            for (let row = 3; row < rows - 2; row++) {
-                for (let col = 2; col < cols - 2; col++) {
-                    const randomChar = chars[Math.floor(Math.random() * chars.length)]
-                    const randomColor = neonColors[Math.floor(Math.random() * neonColors.length)]
-                    term.write(`\x1b[${row + 1};${col + 1}H\x1b[38;2;${parseInt(randomColor.slice(1, 3), 16)};${parseInt(randomColor.slice(3, 5), 16)};${parseInt(randomColor.slice(5, 7), 16)}m${randomChar}`)
                 }
             }
         }
@@ -117,6 +112,9 @@ async function bootLoader() {
 
     debugMode = true
     isPaused = false
+    animationComplete = false
+    animationStartTime = Date.now()
+    remainingTime = animationDuration
     window.advanceFrame = () => {
         frameCount++
         drawFrame()
@@ -127,24 +125,47 @@ async function bootLoader() {
         drawFrame()
     }, 100)
 
-    setTimeout(() => {
+    endAnimationCallback = () => {
         clearInterval(dotInterval)
         if (matrixIntervalId) {
             clearInterval(matrixIntervalId)
         }
         debugMode = false
         isPaused = false
+        animationComplete = false
         window.advanceFrame = null
-        term.reset()
-        const now = new Date()
-        const dateTime = now.toLocaleString()
-        term.write(`Welcome to starkOS ${dateTime}\r\n`)
-        term.write('\r\n')
-        cmdHelp()
-        term.write('\r\n')
-        term.write(prompt + ' ')
-        inputEnabled = true
-    }, 5000)
+        endAnimationCallback = null
+
+        setTimeout(() => {
+            let clearRow = 3
+            const collapseInterval = setInterval(() => {
+                if (clearRow < rows - 2) {
+                    for (let col = 2; col < cols - 2; col++) {
+                        term.write(`\x1b[${clearRow + 1};${col + 1}H `)
+                    }
+                    clearRow++
+                } else {
+                    clearInterval(collapseInterval)
+                    term.reset()
+                    const now = new Date()
+                    const dateTime = now.toLocaleString()
+                    term.write(`Welcome to starkOS ${dateTime}\r\n`)
+                    term.write('\r\n')
+                    cmdHelp()
+                    term.write('\r\n')
+                    term.write(prompt + ' ')
+                    inputEnabled = true
+                }
+            }, 30)
+        }, 1000)
+    }
+
+    animationTimeoutId = setTimeout(() => {
+        animationComplete = true
+        if (!isPaused) {
+            endAnimationCallback()
+        }
+    }, animationDuration)
 }
 
 term.onData(e => {
@@ -155,6 +176,11 @@ term.onData(e => {
                     clearInterval(matrixIntervalId)
                     matrixIntervalId = null
                 }
+                if (animationTimeoutId) {
+                    clearTimeout(animationTimeoutId)
+                    animationTimeoutId = null
+                    remainingTime = animationDuration - (Date.now() - animationStartTime)
+                }
                 isPaused = true
             } else {
                 if (window.advanceFrame) {
@@ -164,12 +190,25 @@ term.onData(e => {
             return
         } else if (e === '\r') {
             if (isPaused) {
-                matrixIntervalId = setInterval(() => {
-                    if (window.advanceFrame) {
-                        window.advanceFrame()
+                if (animationComplete) {
+                    if (endAnimationCallback) {
+                        endAnimationCallback()
                     }
-                }, 100)
-                isPaused = false
+                } else {
+                    matrixIntervalId = setInterval(() => {
+                        if (window.advanceFrame) {
+                            window.advanceFrame()
+                        }
+                    }, 100)
+                    animationStartTime = Date.now()
+                    animationTimeoutId = setTimeout(() => {
+                        animationComplete = true
+                        if (!isPaused && endAnimationCallback) {
+                            endAnimationCallback()
+                        }
+                    }, remainingTime)
+                    isPaused = false
+                }
             }
             return
         }
