@@ -7,21 +7,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Gajraj+One&family=Comfortaa:wght@300..700&family=Monoton&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto+Slab:wght@100..900&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="fonts.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="public/fonts.css">
+    <link rel="stylesheet" href="public/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <span class="header-shadow">Starkeeper.io</span>
-            <span class="header-main">Starkeeper.io</span>
+            <span class="header-shadow">STARKEEPER.IO</span>
+            <span class="header-main">STARKEEPER.IO</span>
         </header>
-        <aside class="left-rail">Left Rail</aside>
-        <main class="main">Main Content</main>
-        <section class="sub">Sub Content</section>
-        <aside class="right-rail">Right Rail</aside>
-        <footer class="footer">Footer</footer>
+        <aside class="left-rail"></aside>
+        <main class="main">
+            <div id="terminal"></div>
+        </main>
+        <section class="sub"></section>
+        <aside class="right-rail"></aside>
+        <footer class="footer"></footer>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
     <script src="src/main.js"></script>
 </body>
 </html>

@@ -4,5 +4,8 @@
   "description": "A simple web page project",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@xterm/xterm": "^6.0.0"
+  }
 }
