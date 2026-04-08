@@ -17,6 +17,8 @@
         <header class="header">
             <span class="header-shadow">STARKEEPER.IO</span>
             <span class="header-main">STARKEEPER.IO</span>
+            <span class="lower-right">
+            </span>
         </header>
         <main class="main">
             <div id="terminal"></div>
@@ -38,9 +40,25 @@
                                                             * NGINX * PAYMENT GATEWAYS * POSTGRES * MARIADB * MONGO TOO *
                                                             * Just a few of my favorite things
 " data-color="#ff88FF" data-max-chars="20" data-speed="200"></span>
-
-            <span class="footer-right">CREATED BY <img src="public/images/email.png" height="14px"></span>
+            <span class="footer-right" style="position: relative; left: 14px;">
+                <a target="_GITHUB"
+               href="https://github.com/brighams/">
+               CREATED BY <img src="public/images/email.png" height="14px">
+            </a>
+            </span>
         </footer>
+
+        <!-- Need to figure out how to add this -->
+<!--        <a target="_UPBEAT" href="https://uppbeat.io/t/d0d/orbit"-->
+<!--           style="color:#666666; font-size: 12px; padding-bottom: 4px;">-->
+<!--            Free Music from #Uppbeat License code: 8CWB22QJHCXO9EWR</a>-->
+
+<!--        <div class="control-icon" id="musicIcon" title="Click to mute music">-->
+<!--            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">-->
+<!--                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>-->
+<!--            </svg>-->
+<!--        </div>-->
+
     </div>
     <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
     <script src="src/colors.js"></script>
@@ -48,4 +66,24 @@
     <script src="src/trie.js"></script>
     <script src="src/main.js"></script>
 </body>
+<script>
+
+  window.addEventListener('load', () => {
+    const audio = new Audio('./public/sound/orbit-d0d-main-version-29627-02-39.mp3')
+    audio.loop = true
+    audio.volume = 0.5
+
+    const startAudio = () => {
+      audio.play().catch(() => {
+      })
+      document.removeEventListener('click', startAudio)
+      document.removeEventListener('keydown', startAudio)
+    }
+
+    document.addEventListener('click', startAudio)
+    document.addEventListener('keydown', startAudio)
+  })
+
+</script>
+
 </html>

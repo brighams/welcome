@@ -61,6 +61,13 @@ body {
     -webkit-text-fill-color: transparent;
 }
 
+.lower-right {
+    position: absolute;
+    right: 20em;
+    bottom: 1em;
+    font-size: 12px;
+}
+
 .left-rail {
     grid-area: left-rail;
     background: rgba(0, 0, 0, 0.3);
@@ -96,13 +103,13 @@ body {
 .footer {
     grid-area: footer;
     background: #000;
-    border-radius: 0.5em;
-    padding: 1em;
     font-family: var(--font-roboto-mono);
     text-transform: uppercase;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin: 0 -1em 0 -1em;
+    padding: 0.5em 1em;
 }
 
 .scrolling-container {
