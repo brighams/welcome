@@ -203,13 +203,6 @@ class ScrollingText {
           this.position = this.message.length + 5
         }
         break
-      case 'up':
-      case 'down':
-        displayText = this.message.charAt(this.position % this.message.length)
-        this.position += (this.direction === 'down' ? 1 : -1)
-        if (this.position < 0) this.position = this.message.length - 1
-        if (this.position >= this.message.length) this.position = 0
-        break
     }
 
     this.element.textContent = displayText
