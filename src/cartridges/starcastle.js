@@ -11,9 +11,7 @@ const starcastle = {
       overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:100;background:#000;'
 
       const iframe = document.createElement('iframe')
-      iframe.src = window.location.hostname === 'localhost'
-        ? 'http://localhost:5174'
-        : 'https://brighams.github.io/StarCastle/'
+      iframe.src = './StarCastle/index.html'
       iframe.style.cssText = 'width:100%;height:100%;border:none;display:block;'
 
       const close_btn = document.createElement('button')

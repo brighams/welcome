@@ -1,0 +1,3 @@
+[submodule "StarCastle"]
+	path = StarCastle
+	url = git@github.com:brighams/StarCastle.git

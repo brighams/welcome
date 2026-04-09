@@ -6,7 +6,8 @@
   "author": "",
   "license": "ISC",
   "scripts": {
-    "dev": "vite"
+    "build:starcastle": "cd StarCastle/2d && npm install && npm run build && cp -r ../dist/. public/img public/sound ../../public/starcastle/",
+    "dev": "mkdir -p public/starcastle && npm run build:starcastle && vite"
   },
   "dependencies": {
     "@xterm/xterm": "^6.0.0"
