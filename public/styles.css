@@ -138,12 +138,37 @@ body {
     padding: 0.5em;
     overflow-y: hidden;
     height: 100%;
+    position: relative;
+    scrollbar-width: none;
 }
 
 #terminal ::-webkit-scrollbar {
     display: none;
 }
 
-#terminal {
-    scrollbar-width: none;
+#terminal::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 0.5em;
+    background:
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.08) 2px,
+            rgba(0, 0, 0, 0.08) 4px
+        ),
+        radial-gradient(
+            ellipse 80% 30% at 50% -5%,
+            rgba(255, 255, 255, 0.05) 0%,
+            transparent 100%
+        ),
+        radial-gradient(
+            ellipse at center,
+            transparent 35%,
+            rgba(0, 0, 0, 0.8) 100%
+        );
 }
