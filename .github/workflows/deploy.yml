@@ -1,0 +1,52 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build StarCastle
+        run: cd StarCastle/2d && npm ci && npm run build
+
+      - name: Stage site
+        run: |
+          mkdir -p _site/starcastle
+          cp index.html CNAME _site/
+          cp -r src _site/
+          cp -r public _site/ && rm -rf _site/public/starcastle
+          cp -r StarCastle/dist/. StarCastle/2d/public/img StarCastle/2d/public/sound _site/starcastle/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
